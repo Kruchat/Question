@@ -25,10 +25,10 @@ export default function ExamPage() {
             fetch('/api/exam/questions').then(res => res.json()),
             fetch('/api/exam/status').then(res => res.json())
         ]).then(([qs, sys]) => {
-            setQuestions(qs);
+            setQuestions(Array.isArray(qs) ? qs : []);
             setTimeLeft((sys.timeLimit || 20) * 60);
             setLoading(false);
-        });
+        }).catch(() => setLoading(false));
     }, [router]);
 
     useEffect(() => {
@@ -46,8 +46,9 @@ export default function ExamPage() {
         return () => clearInterval(timer);
     }, [loading, submitting, answers]);
 
-    const handleSelectOption = (qId: string, value: string) => {
-        setAnswers(prev => ({ ...prev, [qId]: value }));
+    const handleSelectOption = (qId: string, value: any) => {
+        const strValue = typeof value === 'object' ? (value?.text || JSON.stringify(value)) : String(value);
+        setAnswers(prev => ({ ...prev, [qId]: strValue }));
     };
 
     const handleSubmit = async () => {
@@ -147,7 +148,7 @@ export default function ExamPage() {
                                     checked={isSelected}
                                     onChange={() => handleSelectOption(currentQ.id, opt)}
                                 />
-                                <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-medium">{opt}</span>
+                                <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-medium">{typeof opt === 'object' ? (opt?.text || JSON.stringify(opt)) : String(opt)}</span>
                             </label>
                         );
                     })}
