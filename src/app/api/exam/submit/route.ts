@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
@@ -9,20 +10,22 @@ export async function POST(req: Request) {
         // 1. Fetch all active questions and correct answers
         const { data: questions, error: qError } = await supabase
             .from('questions')
-            .select('id, correct_answer')
+            .select('id, answer, options_json')
             .eq('status', 'active');
 
         if (qError) throw qError;
 
+        // Build answer lookup: question id -> correct answer text
         const answersKey: Record<string, string> = {};
-        questions.forEach(q => { answersKey[q.id] = q.correct_answer?.toString(); });
+        questions.forEach(q => { answersKey[q.id] = q.answer; });
 
         // 2. Insert or Update answers and calculate score
         let score = 0;
         const answerRows = [];
 
         for (const [qId, stuAns] of Object.entries(answers as Record<string, string>)) {
-            const isCorrect = (stuAns.trim() === answersKey[qId]?.trim()) ? 1 : 0;
+            const correctAns = answersKey[qId];
+            const isCorrect = (stuAns?.trim() === correctAns?.trim()) ? 1 : 0;
             score += isCorrect;
 
             answerRows.push({

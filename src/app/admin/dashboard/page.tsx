@@ -19,21 +19,24 @@ export default function AdminDashboard() {
 
     const [loading, setLoading] = useState(true);
 
-    const fetchSettings = () => fetch('/api/admin/settings').then(res => res.json()).then(setSettings);
-    const fetchLeaderboard = () => fetch('/api/admin/leaderboard').then(res => res.json()).then(setLeaderboard);
-    const fetchQuestions = () => fetch('/api/admin/questions').then(res => res.json()).then(setQuestions);
+    const fetchSettings = () => fetch('/api/admin/settings').then(res => res.json()).then(data => {
+        if (data && !data.error) setSettings(data);
+    });
+    const fetchLeaderboard = () => fetch('/api/admin/leaderboard').then(res => res.json()).then(data => {
+        if (Array.isArray(data)) setLeaderboard(data);
+    });
+    const fetchQuestions = () => fetch('/api/admin/questions').then(res => res.json()).then(data => {
+        if (Array.isArray(data)) setQuestions(data);
+    });
 
     useEffect(() => {
         Promise.all([fetchSettings(), fetchLeaderboard(), fetchQuestions()])
             .then(() => setLoading(false))
             .catch(err => {
-                if (err.message?.includes('Unauthorized') || err?.status === 401) {
-                    router.push('/admin');
-                } else {
-                    setLoading(false);
-                }
+                console.error('Dashboard load error:', err);
+                setLoading(false);
             });
-    }, [router]);
+    }, []);
 
     const handleLogout = async () => {
         await fetch('/api/admin/logout', { method: 'POST' });

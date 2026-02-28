@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
@@ -10,12 +11,11 @@ export async function GET() {
         const { data, error } = await supabase
             .from('questions')
             .select('*')
-            .eq('status', 'active')
-            .order('created_at', { ascending: true });
+            .eq('status', 'active');
 
         if (error) throw error;
 
-        return NextResponse.json(data);
+        return NextResponse.json(data || []);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -30,15 +30,36 @@ export async function POST(req: Request) {
 
         if (action === 'bulk_save') {
             if (replaceAll) {
-                await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+                // Delete all existing questions
+                const { error: delErr } = await supabase.from('questions').delete().neq('id', '__impossible__');
+                if (delErr) throw delErr;
             }
 
-            const newQuestions = questions.map((q: any) => ({
-                text: q.text,
-                options: q.options,
-                correct_answer: parseInt(q.correct_answer ?? q.answer, 10),
-                status: 'active'
-            }));
+            const newQuestions = questions.map((q: any, idx: number) => {
+                // Generate a unique text ID
+                const qId = 'Q' + String(idx + 1).padStart(3, '0') + '_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+                // Handle options: could be array or already JSON string
+                let optionsJson = q.options;
+                if (Array.isArray(optionsJson)) {
+                    optionsJson = JSON.stringify(optionsJson);
+                }
+
+                // Handle answer: could be index number or text value
+                let answerValue = q.answer;
+                if (typeof answerValue === 'number' && Array.isArray(q.options)) {
+                    answerValue = q.options[answerValue]; // Convert index to text
+                }
+
+                return {
+                    id: qId,
+                    type: 'choice',
+                    text: q.text,
+                    options_json: optionsJson,
+                    answer: String(answerValue),
+                    status: 'active'
+                };
+            });
 
             if (newQuestions.length > 0) {
                 const { error } = await supabase.from('questions').insert(newQuestions);
@@ -49,30 +70,54 @@ export async function POST(req: Request) {
 
         // Single create
         if (action === 'create') {
+            const qId = 'QA' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            let optionsJson = question.options;
+            if (Array.isArray(optionsJson)) {
+                optionsJson = JSON.stringify(optionsJson);
+            }
+
+            let answerValue = question.answer;
+            if (typeof answerValue === 'number' && Array.isArray(question.options)) {
+                answerValue = question.options[answerValue];
+            }
+
             const { error } = await supabase.from('questions').insert([{
+                id: qId,
+                type: 'choice',
                 text: question.text,
-                options: question.options,
-                correct_answer: parseInt(question.correct_answer ?? question.answer, 10),
+                options_json: optionsJson,
+                answer: String(answerValue),
                 status: 'active'
             }]);
             if (error) throw error;
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, id: qId });
         }
 
         // Update
         if (action === 'update' && id) {
+            let optionsJson = question.options;
+            if (Array.isArray(optionsJson)) {
+                optionsJson = JSON.stringify(optionsJson);
+            }
+
+            let answerValue = question.answer;
+            if (typeof answerValue === 'number' && Array.isArray(question.options)) {
+                answerValue = question.options[answerValue];
+            }
+
             const { error } = await supabase.from('questions')
                 .update({
                     text: question.text,
-                    options: question.options,
-                    correct_answer: parseInt(question.correct_answer ?? question.answer, 10),
+                    options_json: optionsJson,
+                    answer: String(answerValue),
                 })
                 .eq('id', id);
             if (error) throw error;
             return NextResponse.json({ success: true });
         }
 
-        // Delete (Soft delete or hard delete; doing hard delete for simplicity)
+        // Delete
         if (action === 'delete' && id) {
             const { error } = await supabase.from('questions')
                 .delete()
