@@ -14,35 +14,31 @@ export async function GET() {
         if (error) throw error;
         if (!data || data.length === 0) return NextResponse.json([]);
 
-        // Shuffle questions
         const shuffled = data.sort(() => Math.random() - 0.5).map(q => {
-            // Parse options_json - it may be a string, array of strings, or array of {id, text} objects
             let rawOptions = q.options_json;
+
+            // Force re-parse through JSON to ensure we have plain JS objects
+            if (rawOptions && typeof rawOptions !== 'string') {
+                rawOptions = JSON.parse(JSON.stringify(rawOptions));
+            }
             if (typeof rawOptions === 'string') {
                 try { rawOptions = JSON.parse(rawOptions); } catch { rawOptions = []; }
             }
             if (!Array.isArray(rawOptions)) rawOptions = [];
 
-            // Convert each option to a plain string
-            const options: string[] = [];
-            for (let i = 0; i < rawOptions.length; i++) {
-                const item = rawOptions[i];
-                if (item === null || item === undefined) {
-                    options.push('');
-                } else if (typeof item === 'string') {
-                    options.push(item);
-                } else if (typeof item === 'object') {
-                    // Handle {id: "a", text: "some text"} format
-                    options.push(item.text ? String(item.text) : JSON.stringify(item));
-                } else {
-                    options.push(String(item));
-                }
-            }
+            // Extract text from each option - handle both string[] and {id,text}[] formats
+            const plainOptions = rawOptions.map((item: any) => {
+                if (!item) return '';
+                if (typeof item === 'string') return item;
+                // For objects like {id: "a", text: "some option text"}
+                if (item.text !== undefined && item.text !== null) return String(item.text);
+                return JSON.stringify(item);
+            });
 
             return {
                 id: String(q.id),
                 text: String(q.text || ''),
-                options: options,
+                options: plainOptions,
             };
         });
 
