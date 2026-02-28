@@ -10,7 +10,7 @@ export async function POST(req: Request) {
         const { data: questions, error: qError } = await supabase
             .from('questions')
             .select('id, correct_answer')
-            .eq('is_active', true);
+            .eq('status', 'active');
 
         if (qError) throw qError;
 

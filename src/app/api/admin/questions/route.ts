@@ -10,7 +10,7 @@ export async function GET() {
         const { data, error } = await supabase
             .from('questions')
             .select('*')
-            .eq('is_active', true)
+            .eq('status', 'active')
             .order('created_at', { ascending: true });
 
         if (error) throw error;
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
                 text: q.text,
                 options: q.options,
                 correct_answer: parseInt(q.correct_answer ?? q.answer, 10),
-                is_active: true
+                status: 'active'
             }));
 
             if (newQuestions.length > 0) {
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
                 text: question.text,
                 options: question.options,
                 correct_answer: parseInt(question.correct_answer ?? question.answer, 10),
-                is_active: true
+                status: 'active'
             }]);
             if (error) throw error;
             return NextResponse.json({ success: true });
