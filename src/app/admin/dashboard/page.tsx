@@ -16,6 +16,7 @@ export default function AdminDashboard() {
     const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
     const [isImporting, setIsImporting] = useState(false);
     const [replaceAll, setReplaceAll] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     const [loading, setLoading] = useState(true);
 
@@ -105,25 +106,26 @@ export default function AdminDashboard() {
 
     const handleBulkSave = async () => {
         if (previewQuestions.length === 0) return alert('ไม่มีข้อมูลคำถาม');
-        if (!confirm(`ยืนยันบันทึกข้อสอบ ${previewQuestions.length} ข้อลงหน้าต่างระบบ? (ข้อมูลเก่าจะถูก${replaceAll ? 'ลบทิ้งทั้งหมด' : 'เก็บไว้'})`)) return;
+        if (!confirm(`ยืนยันบันทึกข้อสอบ ${previewQuestions.length} ข้อลงระบบ? (ข้อมูลเก่าจะถูก${replaceAll ? 'ลบทิ้งทั้งหมด' : 'เก็บไว้'})`)) return;
 
-        setLoading(true);
+        setSaving(true);
         try {
             const res = await fetch('/api/admin/questions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'bulk_save', replaceAll, questions: previewQuestions })
             });
-            if (!res.ok) throw new Error('Failed to save');
-            alert('อัปเดตคลังข้อสอบสำเร็จ!');
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error || 'Failed to save');
+            alert(`อัปเดตคลังข้อสอบสำเร็จ! (${result.count} ข้อ)`);
             setImportText('');
             setPreviewQuestions([]);
             setIsImporting(false);
             fetchQuestions();
-            setLoading(false);
-        } catch (err) {
-            alert('เกิดข้อผิดพลาดในการบันทึก');
-            setLoading(false);
+        } catch (err: any) {
+            alert('เกิดข้อผิดพลาดในการบันทึก: ' + (err.message || 'Unknown error'));
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -290,8 +292,8 @@ export default function AdminDashboard() {
                                                         <input type="checkbox" checked={replaceAll} onChange={(e) => setReplaceAll(e.target.checked)} className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500" />
                                                         ลบข้อสอบชุดเก่าทิ้งทั้งหมด
                                                     </label>
-                                                    <button onClick={handleBulkSave} className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white rounded-xl font-medium shadow-md">
-                                                        บันทึกลงฐานข้อมูล
+                                                    <button onClick={handleBulkSave} disabled={saving} className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white rounded-xl font-medium shadow-md disabled:opacity-50">
+                                                        {saving ? 'กำลังบันทึก...' : 'บันทึกลงฐานข้อมูล'}
                                                     </button>
                                                 </div>
                                             </div>
