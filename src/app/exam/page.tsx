@@ -4,6 +4,25 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Helper: get display text from an option (handles both string and {id, text} format)
+function getOptionText(opt: any): string {
+    if (!opt) return '';
+    if (typeof opt === 'string') return opt;
+    if (typeof opt === 'object' && opt.text) return String(opt.text);
+    return JSON.stringify(opt);
+}
+
+// Helper: get unique key from an option for tracking selected answers
+function getOptionKey(opt: any): string {
+    if (!opt) return '';
+    if (typeof opt === 'string') return opt;
+    if (typeof opt === 'object') {
+        if (opt.id) return String(opt.id);
+        if (opt.text) return String(opt.text);
+    }
+    return JSON.stringify(opt);
+}
+
 export default function ExamPage() {
     const router = useRouter();
     const [questions, setQuestions] = useState<any[]>([]);
@@ -46,9 +65,9 @@ export default function ExamPage() {
         return () => clearInterval(timer);
     }, [loading, submitting, answers]);
 
-    const handleSelectOption = (qId: string, value: any) => {
-        const strValue = typeof value === 'object' ? (value?.text || JSON.stringify(value)) : String(value);
-        setAnswers(prev => ({ ...prev, [qId]: strValue }));
+    const handleSelectOption = (qId: string, opt: any) => {
+        // Store the option key (id like "a","b","c","d" or the text itself)
+        setAnswers(prev => ({ ...prev, [qId]: getOptionKey(opt) }));
     };
 
     const handleSubmit = async () => {
@@ -104,6 +123,7 @@ export default function ExamPage() {
     }
 
     const currentQ = questions[currentIdx];
+    const rawOptions = currentQ.options || [];
     const progressPercent = ((currentIdx + 1) / questions.length) * 100;
 
     return (
@@ -133,11 +153,13 @@ export default function ExamPage() {
 
             <div className="glass-card p-4 sm:p-8 md:p-10 mb-4 sm:mb-8 min-h-[200px] sm:min-h-[350px] flex flex-col justify-center">
                 <h3 className="text-lg sm:text-2xl font-semibold mb-4 sm:mb-8 text-slate-800 dark:text-slate-100 leading-relaxed font-mitr focus:outline-none">
-                    {currentIdx + 1}. {currentQ.text}
+                    {currentIdx + 1}. {String(currentQ.text || '')}
                 </h3>
                 <div className="space-y-2 sm:space-y-4">
-                    {currentQ.options?.map((opt: string, i: number) => {
-                        const isSelected = answers[currentQ.id] === opt;
+                    {rawOptions.map((opt: any, i: number) => {
+                        const optKey = getOptionKey(opt);
+                        const optText = getOptionText(opt);
+                        const isSelected = answers[currentQ.id] === optKey;
                         return (
                             <label key={i} className={`exam-option-premium ${isSelected ? 'selected' : ''}`}>
                                 <div className="radio-premium flex-shrink-0"></div>
@@ -148,7 +170,7 @@ export default function ExamPage() {
                                     checked={isSelected}
                                     onChange={() => handleSelectOption(currentQ.id, opt)}
                                 />
-                                <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-medium">{typeof opt === 'object' ? (opt?.text || JSON.stringify(opt)) : String(opt)}</span>
+                                <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-medium">{optText}</span>
                             </label>
                         );
                     })}
