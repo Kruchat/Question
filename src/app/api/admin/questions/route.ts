@@ -30,7 +30,11 @@ export async function POST(req: Request) {
 
         if (action === 'bulk_save') {
             if (replaceAll) {
-                // Delete all existing questions
+                // First delete answers that reference questions (FK constraint)
+                await supabase.from('answers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                // Then delete all attempts
+                await supabase.from('attempts').delete().neq('attempt_id', '00000000-0000-0000-0000-000000000000');
+                // Then delete all existing questions
                 const { error: delErr } = await supabase.from('questions').delete().neq('id', '__impossible__');
                 if (delErr) throw delErr;
             }
@@ -39,10 +43,12 @@ export async function POST(req: Request) {
                 // Generate a unique text ID
                 const qId = 'Q' + String(idx + 1).padStart(3, '0') + '_' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
-                // Handle options: could be array or already JSON string
+                // Handle options: must be a native array/object for jsonb column
+                // If it's already an array, keep it as-is (Supabase handles it)
+                // If it's a string, parse it back to an array
                 let optionsJson = q.options;
-                if (Array.isArray(optionsJson)) {
-                    optionsJson = JSON.stringify(optionsJson);
+                if (typeof optionsJson === 'string') {
+                    try { optionsJson = JSON.parse(optionsJson); } catch (e) { /* keep as string fallback */ }
                 }
 
                 // Handle answer: could be index number or text value
@@ -73,8 +79,8 @@ export async function POST(req: Request) {
             const qId = 'QA' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
             let optionsJson = question.options;
-            if (Array.isArray(optionsJson)) {
-                optionsJson = JSON.stringify(optionsJson);
+            if (typeof optionsJson === 'string') {
+                try { optionsJson = JSON.parse(optionsJson); } catch (e) { /* keep */ }
             }
 
             let answerValue = question.answer;
@@ -97,8 +103,8 @@ export async function POST(req: Request) {
         // Update
         if (action === 'update' && id) {
             let optionsJson = question.options;
-            if (Array.isArray(optionsJson)) {
-                optionsJson = JSON.stringify(optionsJson);
+            if (typeof optionsJson === 'string') {
+                try { optionsJson = JSON.parse(optionsJson); } catch (e) { /* keep */ }
             }
 
             let answerValue = question.answer;
@@ -119,6 +125,8 @@ export async function POST(req: Request) {
 
         // Delete
         if (action === 'delete' && id) {
+            // Delete related answers first (FK constraint)
+            await supabase.from('answers').delete().eq('question_id', id);
             const { error } = await supabase.from('questions')
                 .delete()
                 .eq('id', id);
