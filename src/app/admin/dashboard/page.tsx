@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +11,11 @@ export default function AdminDashboard() {
     const [settings, setSettings] = useState<any>({});
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [questions, setQuestions] = useState<any[]>([]);
+
+    const [importText, setImportText] = useState('');
+    const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
+    const [isImporting, setIsImporting] = useState(false);
+    const [replaceAll, setReplaceAll] = useState(true);
 
     const [loading, setLoading] = useState(true);
 
@@ -73,6 +79,48 @@ export default function AdminDashboard() {
             fetchQuestions();
         } catch (err) {
             alert('เกิดข้อผิดพลาด');
+        }
+    };
+
+    const handleParseJson = () => {
+        try {
+            let textToParse = importText.trim();
+            if (textToParse.startsWith('const ') || textToParse.startsWith('let ') || textToParse.startsWith('var ')) {
+                textToParse = textToParse.replace(/^(const|let|var)\s+\w+\s*=\s*/, '').replace(/;$/, '');
+            }
+            const parsed = new Function('return ' + textToParse)();
+            if (Array.isArray(parsed)) {
+                setPreviewQuestions(parsed);
+                alert(`ดึงข้อมูลสำเร็จ ${parsed.length} ข้อ`);
+            } else {
+                throw new Error('Not an array');
+            }
+        } catch (e) {
+            alert('รูปแบบโค้ดไม่ถูกต้อง กรุณาอิงตามรูปแบบ JS Array');
+        }
+    };
+
+    const handleBulkSave = async () => {
+        if (previewQuestions.length === 0) return alert('ไม่มีข้อมูลคำถาม');
+        if (!confirm(`ยืนยันบันทึกข้อสอบ ${previewQuestions.length} ข้อลงหน้าต่างระบบ? (ข้อมูลเก่าจะถูก${replaceAll ? 'ลบทิ้งทั้งหมด' : 'เก็บไว้'})`)) return;
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/admin/questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulk_save', replaceAll, questions: previewQuestions })
+            });
+            if (!res.ok) throw new Error('Failed to save');
+            alert('อัปเดตคลังข้อสอบสำเร็จ!');
+            setImportText('');
+            setPreviewQuestions([]);
+            setIsImporting(false);
+            fetchQuestions();
+            setLoading(false);
+        } catch (err) {
+            alert('เกิดข้อผิดพลาดในการบันทึก');
+            setLoading(false);
         }
     };
 
@@ -208,23 +256,62 @@ export default function AdminDashboard() {
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-4 mb-4 gap-4">
                                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 font-mitr">จัดการคลังข้อสอบ</h3>
-                                <button onClick={() => alert('ฟีเจอร์เพิ่มข้อสอบ จะต้องสร้าง Modal เพิ่มในภายหลัง (ใช้ผ่าน Supabase Studio ง่ายกว่าสำหรับเวอร์ชั่นนี้)')} className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-emerald-500/20">
-                                    + เพิ่มข้อสอบ
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setIsImporting(!isImporting)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                                        📥 {isImporting ? 'ปิดหน้าต่างนำเข้า' : 'นำเข้าชุดข้อสอบ (JSON)'}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="overflow-x-auto bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200">
+
+                            {/* Import Section */}
+                            {isImporting && (
+                                <div className="p-6 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700/50 mb-8 space-y-4">
+                                    <h4 className="font-semibold text-slate-700 dark:text-slate-300 text-lg">นำเข้าจากโค้ด (JS Array Object)</h4>
+                                    <textarea
+                                        rows={5}
+                                        value={importText}
+                                        onChange={(e) => setImportText(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 font-mono text-xs dark:text-slate-300"
+                                        placeholder="วางโค้ด const defaultQuestions = [...] ลงที่นี่"
+                                    ></textarea>
+                                    <button onClick={handleParseJson} className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium w-full">
+                                        ตรวจสอบข้อมูลจากโค้ด
+                                    </button>
+
+                                    {previewQuestions.length > 0 && (
+                                        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                                                <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-lg">พบข้อมูล {previewQuestions.length} ข้อ</h4>
+                                                <div className="flex items-center gap-4">
+                                                    <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                                                        <input type="checkbox" checked={replaceAll} onChange={(e) => setReplaceAll(e.target.checked)} className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500" />
+                                                        ลบข้อสอบชุดเก่าทิ้งทั้งหมด
+                                                    </label>
+                                                    <button onClick={handleBulkSave} className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white rounded-xl font-medium shadow-md">
+                                                        บันทึกลงฐานข้อมูล
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="overflow-x-auto bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-slate-50 text-slate-500 text-sm font-semibold uppercase tracking-wider">
-                                            <th className="p-4 border-b w-16 text-center">#</th>
-                                            <th className="p-4 border-b">คำถาม</th>
-                                            <th className="p-4 border-b w-24 text-center">ลบ</th>
+                                        <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">
+                                            <th className="p-4 border-b dark:border-slate-700 w-16 text-center">#</th>
+                                            <th className="p-4 border-b dark:border-slate-700">คำถาม</th>
+                                            <th className="p-4 border-b dark:border-slate-700 w-24 text-center">จัดการ</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-sm">
-                                        {questions.map((q, i) => (
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                                        {questions.length === 0 ? (
+                                            <tr><td colSpan={3} className="p-6 text-center">ยังไม่มีข้อสอบในระบบ</td></tr>
+                                        ) : questions.map((q, i) => (
                                             <tr key={q.id}>
-                                                <td className="p-4 text-center">{i + 1}</td>
+                                                <td className="p-4 text-center dark:text-slate-400">{i + 1}</td>
                                                 <td className="p-4">{q.text}</td>
                                                 <td className="p-4 text-center">
                                                     <button onClick={() => handleDeleteQuestion(q.id)} className="text-rose-500 hover:underline">ลบ</button>

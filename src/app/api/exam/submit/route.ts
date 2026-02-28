@@ -9,13 +9,13 @@ export async function POST(req: Request) {
         // 1. Fetch all active questions and correct answers
         const { data: questions, error: qError } = await supabase
             .from('questions')
-            .select('id, answer')
-            .eq('status', 'active');
+            .select('id, correct_answer')
+            .eq('is_active', true);
 
         if (qError) throw qError;
 
         const answersKey: Record<string, string> = {};
-        questions.forEach(q => { answersKey[q.id] = q.answer; });
+        questions.forEach(q => { answersKey[q.id] = q.correct_answer?.toString(); });
 
         // 2. Insert or Update answers and calculate score
         let score = 0;

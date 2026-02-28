@@ -10,7 +10,8 @@ export async function GET() {
         const { data, error } = await supabase
             .from('questions')
             .select('*')
-            .neq('status', 'deleted');
+            .eq('is_active', true)
+            .order('created_at', { ascending: true });
 
         if (error) throw error;
 
@@ -29,16 +30,14 @@ export async function POST(req: Request) {
 
         if (action === 'bulk_save') {
             if (replaceAll) {
-                await supabase.from('questions').update({ status: 'deleted' }).neq('status', 'deleted');
+                await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
             }
 
             const newQuestions = questions.map((q: any) => ({
-                id: q.id || ('QA' + Math.random().toString(36).substring(2, 8).toUpperCase()),
-                type: 'choice',
                 text: q.text,
-                options_json: q.options,
-                answer: q.answer,
-                status: 'active'
+                options: q.options,
+                correct_answer: parseInt(q.correct_answer ?? q.answer, 10),
+                is_active: true
             }));
 
             if (newQuestions.length > 0) {
@@ -50,17 +49,14 @@ export async function POST(req: Request) {
 
         // Single create
         if (action === 'create') {
-            const qId = 'QA' + Math.random().toString(36).substring(2, 8).toUpperCase();
             const { error } = await supabase.from('questions').insert([{
-                id: qId,
-                type: 'choice',
                 text: question.text,
-                options_json: question.options,
-                answer: question.answer,
-                status: 'active'
+                options: question.options,
+                correct_answer: parseInt(question.correct_answer ?? question.answer, 10),
+                is_active: true
             }]);
             if (error) throw error;
-            return NextResponse.json({ success: true, id: qId });
+            return NextResponse.json({ success: true });
         }
 
         // Update
@@ -68,18 +64,18 @@ export async function POST(req: Request) {
             const { error } = await supabase.from('questions')
                 .update({
                     text: question.text,
-                    options_json: question.options,
-                    answer: question.answer,
+                    options: question.options,
+                    correct_answer: parseInt(question.correct_answer ?? question.answer, 10),
                 })
                 .eq('id', id);
             if (error) throw error;
             return NextResponse.json({ success: true });
         }
 
-        // Delete
+        // Delete (Soft delete or hard delete; doing hard delete for simplicity)
         if (action === 'delete' && id) {
             const { error } = await supabase.from('questions')
-                .update({ status: 'deleted' })
+                .delete()
                 .eq('id', id);
             if (error) throw error;
             return NextResponse.json({ success: true });
