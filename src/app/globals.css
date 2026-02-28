@@ -12,7 +12,7 @@
   --color-primary-800: #166534;
   --color-primary-900: #14532d;
   --color-primary-950: #052e16;
-  
+
   --font-sans: 'Sarabun', sans-serif;
   --font-mitr: 'Prompt', sans-serif;
 
@@ -24,28 +24,61 @@
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes float-slow {
-  0%, 100% { transform: translateY(0) rotate(45deg); }
-  50% { transform: translateY(-20px) rotate(50deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(45deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(50deg);
+  }
 }
 
 @keyframes float-medium {
-  0%, 100% { transform: translateY(0) rotate(15deg); }
-  50% { transform: translateY(-15px) rotate(5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(15deg);
+  }
+
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+  }
 }
 
 @keyframes float-fast {
-  0%, 100% { transform: translateY(0) rotate(-30deg); }
-  50% { transform: translateY(-25px) rotate(-20deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-30deg);
+  }
+
+  50% {
+    transform: translateY(-25px) rotate(-20deg);
+  }
 }
 
 @layer base {
@@ -55,9 +88,10 @@
 }
 
 @layer components {
+
   /* Luxurious Glass Card */
   .glass-card {
-    @apply bg-white/75 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/80 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] rounded-3xl relative overflow-hidden;
+    @apply bg-white/75 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/80 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0, 0, 0, 0.04)] dark:shadow-[0_8px_30px_rgb(0, 0, 0, 0.2)] rounded-3xl relative overflow-hidden;
   }
 
   /* Input Fields */
@@ -80,53 +114,59 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-700 to-primary-900 dark:from-primary-400 dark:to-primary-600;
   }
 
-  /* Exam Options */
   .exam-option-premium {
-    @apply relative flex items-center p-5 border-2 border-slate-100 dark:border-slate-800 hover:border-primary-200 dark:hover:border-slate-700 bg-white/50 dark:bg-slate-900/50 rounded-2xl cursor-pointer transition-all duration-300 group;
+    @apply relative flex items-center p-5 border-2 border-slate-100 dark:border-slate-800 hover:border-primary-200 dark:hover:border-slate-700 bg-white/50 dark:bg-slate-900/50 rounded-2xl cursor-pointer transition-all duration-300;
   }
+
   .exam-option-premium.selected {
-    @apply border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-[0_0_0_1px_rgba(59,130,246,0.3)];
+    @apply border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-[0_0_0_1px_rgba(59, 130, 246, 0.3)];
   }
 
   /* Custom Radio inside Option */
   .radio-premium {
     @apply w-6 h-6 rounded-full border-[3px] border-slate-300 dark:border-slate-600 mr-4 flex-shrink-0 transition-all duration-300 relative group-hover:border-primary-400;
   }
+
   .exam-option-premium.selected .radio-premium {
     @apply border-primary-500 dark:border-primary-400;
   }
+
   .exam-option-premium.selected .radio-premium::after {
     content: '';
     @apply absolute w-2.5 h-2.5 rounded-full bg-primary-500 dark:bg-primary-400 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
   }
-  
+
   /* Progress Bar */
   .progress-bar-bg {
     @apply w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full mt-3 overflow-hidden;
   }
+
   .progress-bar-fill {
     @apply h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-500 ease-out;
   }
 
   /* Toast */
   .toast-premium {
-    @apply fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-4 bg-white dark:bg-slate-800 shadow-2xl rounded-2xl border border-slate-100 dark:border-slate-700 z-[9999] opacity-0 text-sm font-medium flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform translate-y-10 scale-95;
+    @apply fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-4 bg-white dark:bg-slate-800 shadow-2xl rounded-2xl border border-slate-100 dark:border-slate-700 z-[9999] opacity-0 text-sm font-medium flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.16, 1, 0.3, 1)] transform translate-y-10 scale-95;
   }
+
   .toast-premium.show {
     @apply opacity-100 translate-y-0 scale-100;
   }
 
   /* Podium Styles */
   .podium-rank-1 {
-    @apply bg-gradient-to-t from-yellow-300 to-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.4)] text-yellow-900 border border-yellow-200/50 relative z-10;
+    @apply bg-gradient-to-t from-yellow-300 to-yellow-500 shadow-[0_0_20px_rgba(234, 179, 8, 0.4)] text-yellow-900 border border-yellow-200/50 relative z-10;
   }
+
   .podium-rank-2 {
-    @apply bg-gradient-to-t from-slate-300 to-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.3)] text-slate-900 border border-slate-200/50 relative z-0;
+    @apply bg-gradient-to-t from-slate-300 to-slate-400 shadow-[0_0_15px_rgba(148, 163, 184, 0.3)] text-slate-900 border border-slate-200/50 relative z-0;
   }
+
   .podium-rank-3 {
-    @apply bg-gradient-to-t from-orange-300 to-amber-600 shadow-[0_0_15px_rgba(217,119,6,0.3)] text-orange-950 border border-orange-200/50 relative z-0;
+    @apply bg-gradient-to-t from-orange-300 to-amber-600 shadow-[0_0_15px_rgba(217, 119, 6, 0.3)] text-orange-950 border border-orange-200/50 relative z-0;
   }
-  
+
   .admin-tab.active {
     @apply bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400;
   }
@@ -137,13 +177,16 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 10px;
 }
+
 .dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
@@ -156,4 +199,9 @@
   height: 48px;
   animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
-@keyframes spin { 100% { transform: rotate(360deg); } }
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
